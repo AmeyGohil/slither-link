@@ -1,7 +1,34 @@
 export const EDGE_STATE = {
   ACTIVE: "ACTIVE",
   NOT_ALLOWED: "NOT_ALLOWED",
-  HOVERED: "HOOVERED",
+  HOVERED: "HOVERED",
+  DEFAULT: "DEFAULT",
+};
+
+export const CLICK = {
+  RIGHT: "right",
+  LEFT: "left",
+  MIDDLE: "middle",
+};
+
+export const ORIENTATION = {
+  HOR: "horizontal",
+  VER: "vertical",
+};
+
+export const NODE = {
+  R: "r", // right
+  D: "d", // down
+  N: "n", //number
+};
+
+export const DEFAULT_NODE = {
+  // right side edge state
+  [NODE.R]: EDGE_STATE.DEFAULT,
+  // down side edge state
+  [NODE.D]: EDGE_STATE.DEFAULT,
+  // number
+  [NODE.N]: -1,
 };
 
 export const EXAMPLE_GRID_PROPS = {

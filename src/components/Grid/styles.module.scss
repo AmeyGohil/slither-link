@@ -41,6 +41,9 @@ $animationFillMode: forwards;
   padding: 50px;
   border-radius: 10px;
   background-color: #282c34;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 
   &.readOnly, &.passed {
     * {

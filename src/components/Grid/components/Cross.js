@@ -3,7 +3,7 @@ import {multiStyles} from "../../../utils";
 import styles from "../styles.module.scss";
 
 const Cross = ({
-  orientation = "h",
+  orientation,
   className,
   onRightClick,
   onMiddleClick,
@@ -11,12 +11,7 @@ const Cross = ({
 }) => {
   return (
     <div
-      className={multiStyles(styles, [
-        "line",
-        "cross",
-        orientation === "v" ? "vertical" : "horizontal",
-        className,
-      ])}
+      className={multiStyles(styles, ["line", "cross", orientation, className])}
       {...props}
       onContextMenu={(e) => {
         e.preventDefault();

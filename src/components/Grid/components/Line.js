@@ -3,7 +3,7 @@ import {multiStyles} from "../../../utils";
 import styles from "../styles.module.scss";
 
 const Line = ({
-  orientation = "h",
+  orientation,
   hovered,
   active,
   className,
@@ -15,7 +15,7 @@ const Line = ({
     <div
       className={multiStyles(styles, [
         "line",
-        orientation === "v" ? "vertical" : "horizontal",
+        orientation,
         hovered ? "hovered" : active && "active",
         className,
       ])}

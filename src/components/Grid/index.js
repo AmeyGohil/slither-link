@@ -1,7 +1,6 @@
 import * as React from "react";
-import {EDGE_STATE} from "../../constants";
-import {areValid, findNeighbor, getNeighbors, multiStyles} from "../../utils";
-import Controls from "../Controls";
+import {CLICK, NODE, EDGE_STATE, ORIENTATION} from "../../constants";
+import {getNextState, multiStyles} from "../../utils";
 import LineRow from "./components/LineRow";
 import NumberRow from "./components/NumberRow";
 import styles from "./styles.module.scss";
@@ -9,24 +8,26 @@ import styles from "./styles.module.scss";
 /*
   Grid traversal
     (0, 0) -- (0, 1) -- (0, 2) -->
-      |         |       |
-      |         |       |
+      |         |         |
+      |         |         |
     (1, 0) -- (1, 1) -- (1, 2) -->
-      |         |       |
-      |         |       |
+      |         |         |
+      |         |         |
     (2, 0) -- (2, 1) -- (2, 2) -->
-      |         |       |
-      |         |       |
-      V         V       V
+      |         |         |
+      |         |         |
+      V         V         V
 */
 
-export const DEFAULT_NODE = {neigh: [], n: -1};
-/* 
-  structure for neigh elements: 
-    {state: <EDGE_STATE>, loc: [x, y]}
-*/
-
-const Grid = ({matrix, setMatrix, readOnly, editorMode, state, className}) => {
+const Grid = ({
+  matrix,
+  setMatrix,
+  readOnly,
+  editorMode,
+  easyMode = true,
+  state,
+  className,
+}) => {
   const nHorLine = matrix?.length || 0;
   const nVerLine = matrix?.[0]?.length || 0;
 
@@ -42,78 +43,35 @@ const Grid = ({matrix, setMatrix, readOnly, editorMode, state, className}) => {
     setMatrix(temp);
   };
 
-  const onLineClick = (x, y, direction, click) => {
+  const onLineClick = (x, y, orientation, click) => {
     if (readOnly) {
       return;
     }
 
-    const isMiddleClick = click === "middle";
+    const isRightClick = click === CLICK.RIGHT;
+    const isMiddleClick = click === CLICK.MIDDLE;
+    const isLeftClick = click === CLICK.LEFT;
     const node = [x, y];
-    const otherNode = direction === "horizontal" ? [x, y + 1] : [x + 1, y];
-    let nodeUpdateData = {};
-    let otherNodeUpdateData = {};
-    const neighborIndex = findNeighbor(node, otherNode, matrix);
-    const otherNeighborIndex = findNeighbor(otherNode, node, matrix);
+    const edge = orientation === ORIENTATION.HOR ? NODE.R : NODE.D;
+    const currentState = matrix[x][y][edge];
+    let newState = EDGE_STATE.DEFAULT;
 
-    // if there was already an edge (ACTIVE | NOT_ALLOWED)
-    if (neighborIndex !== -1) {
-      // if the edge was NOT_ALLOWED
-      const isNewEdgeStateEmpty =
-        matrix[x][y].neigh[neighborIndex].state === EDGE_STATE.NOT_ALLOWED;
-      let newNeighbors = getNeighbors(node, matrix).slice();
-      newNeighbors.splice(neighborIndex, 1);
-      nodeUpdateData = {
-        neigh: [
-          ...newNeighbors,
-          ...(isNewEdgeStateEmpty || isMiddleClick
-            ? []
-            : [{state: EDGE_STATE.NOT_ALLOWED, loc: otherNode}]),
-        ],
-      };
-      let newOtherNeighbors = getNeighbors(otherNode, matrix).slice();
-      newOtherNeighbors.splice(otherNeighborIndex, 1);
-      otherNodeUpdateData = {
-        neigh: [
-          ...newOtherNeighbors,
-          ...(isNewEdgeStateEmpty || isMiddleClick
-            ? []
-            : [{state: EDGE_STATE.NOT_ALLOWED, loc: node}]),
-        ],
-      };
-    } else if (!isMiddleClick) {
-      nodeUpdateData = {
-        neigh: [
-          ...matrix[x][y].neigh,
-          {
-            state:
-              click === "left" ? EDGE_STATE.ACTIVE : EDGE_STATE.NOT_ALLOWED,
-            loc: otherNode,
-          },
-        ],
-      };
-      otherNodeUpdateData = {
-        neigh: [
-          ...matrix[otherNode[0]][otherNode[1]].neigh,
-          {
-            state:
-              click === "left" ? EDGE_STATE.ACTIVE : EDGE_STATE.NOT_ALLOWED,
-            loc: node,
-          },
-        ],
-      };
+    if (isMiddleClick) {
+      newState = EDGE_STATE.DEFAULT;
     }
-    updateMatrix([
-      {node, data: nodeUpdateData},
-      {node: otherNode, data: otherNodeUpdateData},
-    ]);
-  };
+    if (isRightClick) {
+      newState = EDGE_STATE;
+    }
+    if (isLeftClick) {
+      newState = getNextState(currentState);
+    }
 
-  const onLineLeftClick = (x, y, direction) =>
-    onLineClick(x, y, direction, "left");
-  const onLineRightClick = (x, y, direction) =>
-    onLineClick(x, y, direction, "right");
-  const onLineMiddleClick = (x, y, direction) =>
-    onLineClick(x, y, direction, "middle");
+    if (currentState === newState) {
+      return;
+    }
+
+    updateMatrix([{node, data: {[edge]: newState}}]);
+  };
 
   const onNumberChange = (x, y, num) => {
     if (!editorMode || readOnly) {
@@ -121,6 +79,8 @@ const Grid = ({matrix, setMatrix, readOnly, editorMode, state, className}) => {
     }
     updateMatrix([{node: [x, y], data: {n: num}}]);
   };
+
+  // console.log(JSON.stringify(matrix));
 
   return (
     <div
@@ -141,21 +101,19 @@ const Grid = ({matrix, setMatrix, readOnly, editorMode, state, className}) => {
               matX={i}
               mat={matrix}
               n={nVerLine}
-              onLineClick={onLineLeftClick}
-              onLineRightClick={onLineRightClick}
-              onLineMiddleClick={onLineMiddleClick}
-              key={`line_row_${i}`}
+              onLineClick={onLineClick}
+              key={`line_row_${i + 1}`}
+              easyMode={easyMode}
             />,
             <NumberRow
               matX={i}
               mat={matrix}
               n={nVerLine}
-              onLineClick={onLineLeftClick}
-              onLineRightClick={onLineRightClick}
-              onLineMiddleClick={onLineMiddleClick}
+              onLineClick={onLineClick}
               onNumberChange={onNumberChange}
               editorMode={editorMode}
-              key={`number_row_${i}`}
+              key={`number_row_${i + 1}`}
+              easyMode={easyMode}
             />,
           ];
         })
@@ -164,10 +122,9 @@ const Grid = ({matrix, setMatrix, readOnly, editorMode, state, className}) => {
             matX={nHorLine - 1}
             mat={matrix}
             n={nVerLine}
-            onLineClick={onLineLeftClick}
-            onLineRightClick={onLineRightClick}
-            onLineMiddleClick={onLineMiddleClick}
+            onLineClick={onLineClick}
             key={`line_row_${nHorLine - 1}`}
+            easyMode={easyMode}
           />,
         ])}
     </div>

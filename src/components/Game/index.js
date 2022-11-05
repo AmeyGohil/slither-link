@@ -1,6 +1,6 @@
 import * as React from "react";
 import {examples} from "../../examples";
-import {copy, getEdges, getMatrix} from "../../utils";
+import {copy, getMatrix, hasAnyEdges} from "../../utils";
 import CheckSolution from "../CheckSolution";
 import Controls from "../Controls";
 import Grid from "../Grid";
@@ -57,11 +57,9 @@ const Game = () => {
 
   const onReset = () => {
     if (dim.length) {
-      // if matrix already empty
-      if (getEdges(matrix).length === 0) {
-        return;
+      if (!hasAnyEdges(matrix)) {
+        updateMatrix(getMatrix(dim, [], numbers));
       }
-      updateMatrix(getMatrix(dim, [], numbers));
     }
   };
 

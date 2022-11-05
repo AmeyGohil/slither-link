@@ -1,5 +1,4 @@
-import {DEFAULT_NODE} from "./components/Grid";
-import {EDGE_STATE} from "./constants";
+import {DEFAULT_NODE, NODE, EDGE_STATE} from "./constants";
 
 // get deep copy of JSON
 export const copy = (json) => JSON.parse(JSON.stringify(json));
@@ -17,10 +16,13 @@ export const multiStyles = (styles, classNames) =>
     .join(" ");
 
 // to check if number is valid number
-export const isValid = (n, lim) => n >= 0 && n <= lim;
+export const isValidN = (n, lim) => n >= 0 && n <= lim;
 
 // to check all elements are valid numbers
-export const areValid = (n, lim) => n.every((n) => isValid(n, lim));
+export const areValidN = (n, lim) => n.every((n) => isValidN(n, lim));
+
+// to check if edge state is not default
+export const isValidEdgeState = (edgeState) => edgeState !== EDGE_STATE.DEFAULT;
 
 export const getMatrix = ([dim1, dim2], edges = [], numbers = []) => {
   const nRows = dim1;
@@ -33,21 +35,20 @@ export const getMatrix = ([dim1, dim2], edges = [], numbers = []) => {
   if (numbers.length > 0) {
     numbers.forEach(({r, c, n}) => {
       if (r <= nRows && c <= nCols) {
-        temp[r - 1][c - 1] = {...temp[r - 1][c - 1], n};
+        temp[r - 1][c - 1] = {...temp[r - 1][c - 1], [NODE.N]: n};
       }
     });
   }
 
   if (edges.length > 0) {
-    edges.forEach(({a: [sx, sy], b: [ex, ey], notAllowed, hovered}) => {
-      const edgeState = notAllowed
-        ? EDGE_STATE.NOT_ALLOWED
-        : hovered
-        ? EDGE_STATE.HOVERED
-        : EDGE_STATE.ACTIVE;
-      let startX, startY, endX, endY, hor, ver;
-      hor = sx === ex;
-      ver = sy === ey;
+    edges.forEach(({a: [sX, sY], b: [eX, eY], notAllowed, hovered}) => {
+      // excluding invalid edges
+      if (!areValidN([sX, eX], nRows) || !areValidN([sY, eY], nCols)) {
+        return;
+      }
+
+      const hor = sX === eX;
+      const ver = sY === eY;
 
       // excluding cases where both points are same
       // or where edge is not hor | ver
@@ -56,46 +57,48 @@ export const getMatrix = ([dim1, dim2], edges = [], numbers = []) => {
         return;
       }
 
+      let startX, startY, endX, endY;
+
       // horizonal line
       if (hor) {
-        startX = endX = sx;
-        if (sy > ey) {
-          startY = ey;
-          endY = sy;
+        startX = endX = sX;
+        if (sY > eY) {
+          startY = eY;
+          endY = sY;
         }
-        if (sy < ey) {
-          startY = sy;
-          endY = ey;
+        if (sY < eY) {
+          startY = sY;
+          endY = eY;
         }
       }
       // vertical line
       if (ver) {
-        startY = endY = sy;
-        if (sx > ex) {
-          startX = ex;
-          endX = sx;
+        startY = endY = sY;
+        if (sX > eX) {
+          startX = eX;
+          endX = sX;
         }
-        if (sx < ex) {
-          startX = sx;
-          endX = ex;
+        if (sX < eX) {
+          startX = sX;
+          endX = eX;
         }
       }
 
       // check if all nodes are valid nodes
-      if (areValid([startX, endX], nRows) && areValid([startY, endY], nCols)) {
+      if (
+        areValidN([startX, endX], nRows) &&
+        areValidN([startY, endY], nCols)
+      ) {
+        const edgeState = notAllowed
+          ? EDGE_STATE.NOT_ALLOWED
+          : hovered
+          ? EDGE_STATE.HOVERED
+          : EDGE_STATE.ACTIVE;
+
         temp[startX][startY] = {
           ...temp[startX][startY],
-          neigh: [
-            ...temp[startX][startY].neigh,
-            {state: edgeState, loc: [endX, endY]},
-          ],
-        };
-        temp[endX][endY] = {
-          ...temp[endX][endY],
-          neigh: [
-            ...temp[endX][endY].neigh,
-            {state: edgeState, loc: [startX, startY]},
-          ],
+          ...(hor && {[NODE.R]: edgeState}),
+          ...(ver && {[NODE.D]: edgeState}),
         };
       }
     });
@@ -105,21 +108,20 @@ export const getMatrix = ([dim1, dim2], edges = [], numbers = []) => {
 };
 
 // to check if a node has an active edge
-export const isNodeActive = (n) =>
-  Array.isArray(n?.neigh) &&
-  n.neigh.some((neighbor) => neighbor.state === EDGE_STATE.ACTIVE);
+export const isNodeActive = (mat, [x, y]) => {
+  let node = mat[x][y];
+  if ([node[NODE.R], node[NODE.D]].includes(EDGE_STATE.ACTIVE)) {
+    return true;
+  }
+  // checking upper edge
+  node = mat?.[x - 1]?.[y];
+  if (node?.[NODE.D] === EDGE_STATE.ACTIVE) {
+    return true;
+  }
+  // checking left edge
+  node = mat[x]?.[y - 1];
 
-// to get neighbors from matrix
-export const getNeighbors = ([ax, ay], mat) => {
-  return mat[ax][ay]?.neigh || [];
-};
-
-// to check if two nodes are neighbor in a matrix
-export const findNeighbor = ([ax, ay], [bx, by], mat) => {
-  const index = mat?.[ax]?.[ay]?.neigh.findIndex(
-    ({loc}) => loc[0] === bx && loc[1] === by
-  );
-  return isNaN(index) ? -1 : index;
+  return node?.[NODE.R] === EDGE_STATE.ACTIVE;
 };
 
 // get an array of all numbers present in the matrix
@@ -137,11 +139,22 @@ export const getNumbers = (mat) => {
       if (c >= nCol - 1) return;
       numbers = [
         ...numbers,
-        ...(node.n > -1 ? [{r: r + 1, c: c + 1, n: node.n}] : []),
+        ...(node[NODE.N] > -1
+          ? [{r: r + 1, c: c + 1, [NODE.N]: node[NODE.N]}]
+          : []),
       ];
     });
   });
   return numbers;
+};
+
+// check if matrix has any valid edges
+export const hasAnyEdges = (mat) => {
+  return mat.some((row) =>
+    row.some(
+      (node) => isValidEdgeState(node[NODE.R]) || isValidEdgeState(node[NODE.D])
+    )
+  );
 };
 
 // get an array of all edges present in the matrix
@@ -149,37 +162,34 @@ export const getEdges = (mat) => {
   let edges = [];
   mat.forEach((row, sX) => {
     row.forEach((node, sY) => {
-      let horEdges = [];
-      let verEdges = [];
-      node.neigh.forEach((edge) => {
-        const [eX, eY] = edge.loc;
-        if (eX > sX && eY === sY) {
-          verEdges = [
-            ...verEdges,
-            {
-              a: [sX, sY],
-              b: [eX, eY],
-              ...(edge?.state === EDGE_STATE.NOT_ALLOWED
-                ? {notAllowed: true}
-                : {}),
-              ...(edge?.state === EDGE_STATE.HOVERED ? {hovered: true} : {}),
-            },
-          ];
-        } else if (eY > sY && eX === sX) {
-          horEdges = [
-            ...horEdges,
-            {
-              a: [sX, sY],
-              b: [eX, eY],
-              ...(edge?.state === EDGE_STATE.NOT_ALLOWED
-                ? {notAllowed: true}
-                : {}),
-              ...(edge?.state === EDGE_STATE.HOVERED ? {hovered: true} : {}),
-            },
-          ];
-        }
-      });
-      edges = [...edges, ...horEdges, ...verEdges];
+      const horEdgeState = node[NODE.R];
+      if (isValidEdgeState(horEdgeState)) {
+        const notAllowed = horEdgeState === EDGE_STATE.NOT_ALLOWED;
+        const hovered = horEdgeState === EDGE_STATE.HOVERED;
+        edges = [
+          ...edges,
+          {
+            a: [sX, sY],
+            b: [sX, sY + 1],
+            ...(notAllowed && {notAllowed}),
+            ...(hovered && {hovered}),
+          },
+        ];
+      }
+      const verEdgeState = node[NODE.D];
+      if (isValidEdgeState(verEdgeState)) {
+        const notAllowed = verEdgeState === EDGE_STATE.NOT_ALLOWED;
+        const hovered = verEdgeState === EDGE_STATE.HOVERED;
+        edges = [
+          ...edges,
+          {
+            a: [sX, sY],
+            b: [sX + 1, sY],
+            ...(notAllowed && {notAllowed}),
+            ...(hovered && {hovered}),
+          },
+        ];
+      }
     });
   });
   return edges;
@@ -188,4 +198,28 @@ export const getEdges = (mat) => {
 // get an array of all active edges present in the matrix
 export const getActiveEdges = (mat) => {
   return getEdges(mat).filter((edge) => !edge?.notAllowed && !edge?.hovered);
+};
+
+// get an array of all active edges present in the matrix
+export const numberHelperState = ([x, y], mat) => {
+  const n = mat[x][y].n;
+  return "false";
+};
+
+// get an array of all active edges present in the matrix
+export const edgeHelperState = ([x, y], mat) => {
+  const n = mat[x][y].n;
+  return "false";
+};
+
+export const getNextState = (state) => {
+  if (state === EDGE_STATE.ACTIVE) {
+    return EDGE_STATE.NOT_ALLOWED;
+  }
+
+  if (state === EDGE_STATE.DEFAULT) {
+    return EDGE_STATE.ACTIVE;
+  }
+
+  return EDGE_STATE.DEFAULT;
 };

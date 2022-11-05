@@ -17,12 +17,13 @@ const CheckSolution = ({matrix, solution, setCheck}) => {
       }, 4000);
     }
 
-    return () => !isNaN(timeout) && clearTimeout(timeout);
+    return () => !Number.isNaN(timeout) && clearTimeout(timeout);
   }, [state]);
   return (
     <div
       className={multiStyles(styles, ["button", state])}
       onClick={() => {
+        console.log(getActiveEdges(matrix));
         let check =
           JSON.stringify(getActiveEdges(matrix)) === JSON.stringify(solution);
         if (check) {
