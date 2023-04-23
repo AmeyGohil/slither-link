@@ -1,6 +1,6 @@
 import * as React from "react";
-import {CLICK, EDGE_STATE, ORIENTATION} from "../../../constants";
-import {edgeHelperState, isNodeActive} from "../../../utils";
+import {CLICK, EDGE_STATE, NODE, ORIENTATION} from "../../../constants";
+import {edgeEasyState, isNodeActive} from "../../../utils";
 import Edge from "./Edge";
 import Node from "./Node";
 import Row from "./Row";
@@ -17,9 +17,9 @@ const LineRow = ({matX, mat = [], n = 1, onLineClick, easyMode}) => {
               active={isNodeActive(mat, [matX, i])}
             />,
             <Edge
-              notAllowed={mat[matX][i].r === EDGE_STATE.NOT_ALLOWED}
+              notAllowed={mat[matX][i][NODE.R] === EDGE_STATE.NOT_ALLOWED}
               orientation={ORIENTATION.HOR}
-              active={mat[matX][i].r !== EDGE_STATE.DEFAULT ? 1 : 0}
+              active={mat[matX][i][NODE.R] !== EDGE_STATE.DEFAULT ? 1 : 0}
               onClick={() => onLineClick(matX, i, ORIENTATION.HOR, CLICK.LEFT)}
               onRightClick={() =>
                 onLineClick(matX, i, ORIENTATION.HOR, CLICK.RIGHT)
@@ -27,9 +27,9 @@ const LineRow = ({matX, mat = [], n = 1, onLineClick, easyMode}) => {
               onMiddleClick={() =>
                 onLineClick(matX, i, ORIENTATION.HOR, CLICK.MIDDLE)
               }
-              hovered={mat[matX][i].r === EDGE_STATE.HOVERED ? 1 : 0}
+              hovered={mat[matX][i][NODE.R] === EDGE_STATE.HOVERED ? 1 : 0}
               key={`edge_${matX + i}`}
-              easyState={easyMode && edgeHelperState([matX, i], mat)}
+              easyState={easyMode && edgeEasyState([matX, i], mat)}
             />,
           ])
           .concat([

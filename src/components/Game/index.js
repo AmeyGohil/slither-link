@@ -57,7 +57,8 @@ const Game = () => {
 
   const onReset = () => {
     if (dim.length) {
-      if (!hasAnyEdges(matrix)) {
+      // if matrix not already empty
+      if (hasAnyEdges(matrix)) {
         updateMatrix(getMatrix(dim, [], numbers));
       }
     }

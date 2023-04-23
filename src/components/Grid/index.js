@@ -30,6 +30,7 @@ const Grid = ({
 }) => {
   const nHorLine = matrix?.length || 0;
   const nVerLine = matrix?.[0]?.length || 0;
+  // console.log(matrix);
 
   if (nHorLine === 0 || nVerLine === 0) {
     return null;

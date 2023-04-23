@@ -47,20 +47,20 @@ export const getMatrix = ([dim1, dim2], edges = [], numbers = []) => {
         return;
       }
 
-      const hor = sX === eX;
-      const ver = sY === eY;
+      const isHor = sX === eX;
+      const isVer = sY === eY;
 
       // excluding cases where both points are same
       // or where edge is not hor | ver
       // Assumption: all edges are between two adjacent nodes
-      if ((hor && ver) || (!hor && !ver)) {
+      if ((isHor && isVer) || (!isHor && !isVer)) {
         return;
       }
 
       let startX, startY, endX, endY;
 
       // horizonal line
-      if (hor) {
+      if (isHor) {
         startX = endX = sX;
         if (sY > eY) {
           startY = eY;
@@ -72,7 +72,7 @@ export const getMatrix = ([dim1, dim2], edges = [], numbers = []) => {
         }
       }
       // vertical line
-      if (ver) {
+      if (isVer) {
         startY = endY = sY;
         if (sX > eX) {
           startX = eX;
@@ -97,8 +97,8 @@ export const getMatrix = ([dim1, dim2], edges = [], numbers = []) => {
 
         temp[startX][startY] = {
           ...temp[startX][startY],
-          ...(hor && {[NODE.R]: edgeState}),
-          ...(ver && {[NODE.D]: edgeState}),
+          ...(isHor && {[NODE.R]: edgeState}),
+          ...(isVer && {[NODE.D]: edgeState}),
         };
       }
     });
@@ -140,7 +140,7 @@ export const getNumbers = (mat) => {
       numbers = [
         ...numbers,
         ...(node[NODE.N] > -1
-          ? [{r: r + 1, c: c + 1, [NODE.N]: node[NODE.N]}]
+          ? [{[NODE.R]: r + 1, c: c + 1, [NODE.N]: node[NODE.N]}]
           : []),
       ];
     });
@@ -201,13 +201,13 @@ export const getActiveEdges = (mat) => {
 };
 
 // get an array of all active edges present in the matrix
-export const numberHelperState = ([x, y], mat) => {
+export const numberEasyState = ([x, y], mat) => {
   const n = mat[x][y].n;
   return "false";
 };
 
 // get an array of all active edges present in the matrix
-export const edgeHelperState = ([x, y], mat) => {
+export const edgeEasyState = ([x, y], mat) => {
   const n = mat[x][y].n;
   return "false";
 };

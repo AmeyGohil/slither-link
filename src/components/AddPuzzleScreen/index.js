@@ -6,8 +6,18 @@ import N from "../Grid/components/N";
 
 import styles from "./styles.module.scss";
 
+const DEFAUTL_DIM = [3, 3];
+const SubmitState = {
+  DEFAULT: "default",
+  SUCCESS: "success",
+};
+const SubmitText = {
+  DEFAULT: "Submit",
+  SUCCESS: "Thanks for submitting! 😀",
+};
+
 const AddPuzzleScreen = ({open, onClose}) => {
-  const [dim, setDim] = React.useState([3, 3]);
+  const [dim, setDim] = React.useState(DEFAUTL_DIM);
   const [gridMat, setGridMat] = React.useState([]);
   const [gridNumbers, setGridNumbers] = React.useState([]);
 
@@ -15,7 +25,7 @@ const AddPuzzleScreen = ({open, onClose}) => {
     if (!isNaN(dim[0]) && dim[0] > 0 && !isNaN(dim[1]) && dim[1] > 0) {
       setGridMat(getMatrix(dim, [], gridNumbers));
     }
-  }, [dim[0], dim[1]]);
+  }, [dim[0], dim[1], JSON.stringify(gridNumbers)]);
 
   React.useEffect(() => {
     setGridNumbers(getNumbers(gridMat));
@@ -24,25 +34,28 @@ const AddPuzzleScreen = ({open, onClose}) => {
   const [gridReset, setGridReset] = React.useState(false);
   React.useEffect(() => {
     if (gridReset) {
-      if (!isNaN(dim[0]) && dim[0] > 0 && !isNaN(dim[1]) && dim[1] > 0) {
-        setGridNumbers([]);
-        setGridMat(getMatrix(dim));
+      const shouldUseDefaultDim =
+        isNaN(dim[0]) || dim[0] <= 0 || isNaN(dim[1]) || dim[1] <= 0;
+      if (shouldUseDefaultDim) {
+        setDim(DEFAUTL_DIM);
       }
+      setGridMat(getMatrix(shouldUseDefaultDim ? DEFAUTL_DIM : dim));
+      setGridNumbers([]);
       setGridReset(false);
     }
   }, [gridReset]);
-  const [submitState, setSubmitState] = React.useState("none");
-  const [submitText, setSubmitText] = React.useState("Submit");
+  const [submitState, setSubmitState] = React.useState(SubmitState.DEFAULT);
+  const [submitText, setSubmitText] = React.useState(SubmitText.DEFAULT);
   const onSubmit = () => {
-    setSubmitState("passed");
-    setSubmitText("Thanks for submitting! 😀");
+    setSubmitState(SubmitState.SUCCESS);
+    setSubmitText(SubmitText.SUCCESS);
   };
   React.useEffect(() => {
     let timeout;
-    if (submitState === "passed") {
+    if (submitState === SubmitState.SUCCESS) {
       timeout = setTimeout(() => {
-        setSubmitState("none");
-        setSubmitText("Submit");
+        setSubmitState(SubmitState.DEFAULT);
+        setSubmitText(SubmitText.DEFAULT);
       }, 5000);
     }
 
@@ -64,20 +77,14 @@ const AddPuzzleScreen = ({open, onClose}) => {
               <div className={styles.dimInputWrapper}>
                 <N
                   value={dim[0]}
-                  setNum={(n) => {
-                    setGridReset(true);
-                    setDim([n, dim[1]]);
-                  }}
+                  setNum={(n) => setDim([n, dim[1]])}
                   editorMode
                   className={styles.input}
                 />
                 X
                 <N
                   value={dim[1]}
-                  setNum={(n) => {
-                    setGridReset(true);
-                    setDim([dim[0], n]);
-                  }}
+                  setNum={(n) => setDim([dim[0], n])}
                   editorMode
                   className={styles.input}
                 />
